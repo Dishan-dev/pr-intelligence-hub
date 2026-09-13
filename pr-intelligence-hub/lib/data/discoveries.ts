@@ -2,6 +2,7 @@ import type { Discovery, DiscoverySource, DiscoveryStatus, DiscoveryWithEvaluati
 import type { OpportunityCategory, OpportunityPriority, RepresentationType } from "@/lib/domain/opportunity";
 import { evaluateOpportunity } from "@/lib/domain/opportunity-score";
 import { createClient } from "@/lib/supabase/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export interface DiscoveryFilters {
   status?: DiscoveryStatus;
@@ -36,10 +37,10 @@ function mapDiscovery(row: DiscoveryRow, sources: DiscoverySource[] = []): Disco
   return { ...discovery, ...evaluation, sources };
 }
 
-export async function getDiscoveries(filters: DiscoveryFilters = {}, pagination: DiscoveryPagination = {}): Promise<PaginatedDiscoveries> {
+export async function getDiscoveries(filters: DiscoveryFilters = {}, pagination: DiscoveryPagination = {}, providedClient?: SupabaseClient): Promise<PaginatedDiscoveries> {
   const pageSize = pagination.pageSize ?? 25;
   const page = Math.max(1, pagination.page ?? 1);
-  const supabase = await createClient();
+  const supabase = providedClient ?? await createClient();
   let query = supabase.from("discovered_opportunities").select("*").order("discovered_at", { ascending: false });
   if (filters.status) {
     query = query.eq("discovery_status", filters.status);

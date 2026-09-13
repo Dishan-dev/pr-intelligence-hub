@@ -8,11 +8,16 @@ interface ResearchSource { id: string; keywords: string; domain: string; }
 const fallbackBudget: ResearchBudget = { monthlyLimitUsd: 3, maxSearchCallsPerRun: 30, urgentDeadlineDays: 14, extractionEstimateUsd: 0.01 };
 
 export async function getResearchConfiguration(supabase: SupabaseClient): Promise<{ budget: ResearchBudget; queries: ResearchQuery[] }> {
-  const [{ data: budgetRow }, { data: queryRows }, { data: sourceRows }] = await Promise.all([
+  const [budgetResult, queryResult, sourceResult] = await Promise.all([
     supabase.from("research_budget_configs").select("monthly_limit_usd, max_search_calls_per_run, urgent_deadline_days, gemini_extraction_estimate_usd").eq("active", true).limit(1).maybeSingle(),
     supabase.from("research_query_configs").select("id, query_text, opportunity_focus, research_source_configs(allowed_domain)").eq("enabled", true).order("priority").limit(30),
     supabase.from("research_source_configs").select("id, search_keywords, allowed_domain").eq("enabled", true).eq("monitoring_frequency", "weekly").order("priority").limit(30),
   ]);
+  const configurationError = budgetResult.error ?? queryResult.error ?? sourceResult.error;
+  if (configurationError) throw new Error(`Research configuration could not be loaded: ${configurationError.message}`);
+  const { data: budgetRow } = budgetResult;
+  const { data: queryRows } = queryResult;
+  const { data: sourceRows } = sourceResult;
   const budget = budgetRow ? { monthlyLimitUsd: Number(budgetRow.monthly_limit_usd), maxSearchCallsPerRun: Number(budgetRow.max_search_calls_per_run), urgentDeadlineDays: Number(budgetRow.urgent_deadline_days), extractionEstimateUsd: Number(budgetRow.gemini_extraction_estimate_usd) } : fallbackBudget;
   const configuredQueries = ((queryRows ?? []) as unknown as Array<{ id: string; query_text: string; opportunity_focus: string; research_source_configs: { allowed_domain: string }[] | null }>).map((row) => ({ id: row.id, queryText: row.query_text, opportunityFocus: row.opportunity_focus, domain: row.research_source_configs?.[0]?.allowed_domain ?? null }));
   const sources = ((sourceRows ?? []) as unknown as Array<{ id: string; search_keywords: string; allowed_domain: string }>).map((row): ResearchSource => ({ id: row.id, keywords: row.search_keywords, domain: row.allowed_domain }));

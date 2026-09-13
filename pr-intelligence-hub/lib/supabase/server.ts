@@ -11,10 +11,12 @@ import { getSupabaseConfig } from "./config";
 export async function createClient() {
   const cookieStore = await cookies();
   const { url, publishableKey } = getSupabaseConfig();
+  const secretKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY;
+  const apiKey = secretKey ?? publishableKey;
 
   return createServerClient(
     url,
-    publishableKey,
+    apiKey,
     {
       cookies: {
         getAll() {
