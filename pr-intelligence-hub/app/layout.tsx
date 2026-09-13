@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
+import { LoadingScreen } from "@/components/loading-screen";
 import "./globals.css";
 
 const defaultUrl = process.env.VERCEL_URL
@@ -10,10 +11,10 @@ const defaultUrl = process.env.VERCEL_URL
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
   title: {
-    default: "PR Intelligence Hub",
-    template: "%s | PR Intelligence Hub",
+    default: "CS PR HUB",
+    template: "%s | CS PR HUB",
   },
-  description: "External representation opportunity intelligence for PR teams.",
+  description: "A practical PR workspace for outreach, opportunities, media, and communications planning.",
 };
 
 const geistSans = Geist({
@@ -30,6 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.className} antialiased`}>
+        <LoadingScreen />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -42,3 +44,4 @@ export default function RootLayout({
     </html>
   );
 }
+

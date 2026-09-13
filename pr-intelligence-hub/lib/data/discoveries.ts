@@ -11,6 +11,18 @@ export interface DiscoveryFilters {
   sort?: "score" | "deadline" | "event" | "newest";
 }
 
+export interface DiscoveryPagination {
+  page?: number;
+  pageSize?: number;
+}
+
+export interface PaginatedDiscoveries {
+  items: DiscoveryWithEvaluation[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 type DiscoveryRow = {
   id: string; title: string; organization_name: string | null; organization_id: string | null; description: string | null;
   category: OpportunityCategory | null; representation_type: RepresentationType | null; event_date: string | null; application_deadline: string | null; location: string | null; event_url: string | null; source_name: string | null; source_url: string | null;
@@ -24,13 +36,15 @@ function mapDiscovery(row: DiscoveryRow, sources: DiscoverySource[] = []): Disco
   return { ...discovery, ...evaluation, sources };
 }
 
-export async function getDiscoveries(filters: DiscoveryFilters = {}): Promise<DiscoveryWithEvaluation[]> {
+export async function getDiscoveries(filters: DiscoveryFilters = {}, pagination: DiscoveryPagination = {}): Promise<PaginatedDiscoveries> {
+  const pageSize = pagination.pageSize ?? 25;
+  const page = Math.max(1, pagination.page ?? 1);
   const supabase = await createClient();
   let query = supabase.from("discovered_opportunities").select("*").order("discovered_at", { ascending: false });
   if (filters.status) {
     query = query.eq("discovery_status", filters.status);
   } else {
-    query = query.in("discovery_status", ["new", "reviewing"]);
+    query = query.in("discovery_status", ["ai_found_needs_review", "reviewing", "possible_duplicate"]);
   }
   if (filters.category) query = query.eq("category", filters.category);
   if (filters.representationType) query = query.eq("representation_type", filters.representationType);
@@ -42,7 +56,28 @@ export async function getDiscoveries(filters: DiscoveryFilters = {}): Promise<Di
   if (filters.sort === "score") discoveries.sort((a, b) => (b.overallScore ?? -1) - (a.overallScore ?? -1));
   if (filters.sort === "deadline") discoveries.sort((a, b) => dateSort(a.applicationDeadline, b.applicationDeadline));
   if (filters.sort === "event") discoveries.sort((a, b) => dateSort(a.eventDate, b.eventDate));
-  return discoveries;
+  const total = discoveries.length;
+  const start = (page - 1) * pageSize;
+  return { items: discoveries.slice(start, start + pageSize), total, page, pageSize };
+}
+
+export async function getClubsAndSocieties(): Promise<DiscoveryWithEvaluation[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("discovered_opportunities")
+    .select("*")
+    .in("discovery_status", ["ai_found_needs_review", "reviewing", "possible_duplicate"])
+    .order("discovered_at", { ascending: false });
+  if (error) throw new Error("Unable to load clubs and societies.");
+  return ((data ?? []) as unknown as DiscoveryRow[])
+    .filter((row) => {
+      const searchable = [row.title, row.organization_name, row.description, row.recommendation_summary]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return /(club|societ|association|student organization)/.test(searchable) && !/university of moratuwa|uom/.test(searchable);
+    })
+    .map((row) => mapDiscovery(row));
 }
 
 export async function getDiscovery(id: string): Promise<DiscoveryWithEvaluation | null> {

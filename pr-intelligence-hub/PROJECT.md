@@ -1,8 +1,8 @@
-# PR Intelligence Hub
+# CS PR HUB
 
 ## Product
 
-PR Intelligence Hub is an internal Public Relations opportunity intelligence and
+CS PR HUB is an internal Public Relations outreach and planning workspace and
 external representation management system initially designed for an AIESEC local
 committee.
 

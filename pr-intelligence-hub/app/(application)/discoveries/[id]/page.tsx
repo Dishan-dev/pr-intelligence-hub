@@ -3,25 +3,314 @@ import { Suspense } from "react";
 import { ArrowUpRight, Check, ChevronLeft, CopyX, X } from "lucide-react";
 import { notFound } from "next/navigation";
 
-import { DiscoveryStatusBadge } from "@/components/discovery-badge";
+import {
+  DiscoveryStatusBadge,
+  RepresentationPurposeBadge,
+} from "@/components/discovery-badge";
 import { OpportunityPriorityBadge } from "@/components/opportunity-badge";
 import { Button } from "@/components/ui/button";
 import { approveDiscovery, setDiscoveryStatus } from "../actions";
+import { assignDiscoveryToSelf, prepareOutreachDraft } from "../review-actions";
 import { getDiscovery } from "@/lib/data/discoveries";
-import { DISCOVERY_STATUSES, DISCOVERY_STATUS_LABELS } from "@/lib/domain/discovery";
-import { OPPORTUNITY_CATEGORY_LABELS, REPRESENTATION_TYPE_LABELS } from "@/lib/domain/opportunity";
+import {
+  DISCOVERY_STATUSES,
+  DISCOVERY_STATUS_LABELS,
+} from "@/lib/domain/discovery";
+import {
+  OPPORTUNITY_CATEGORY_LABELS,
+  REPRESENTATION_TYPE_LABELS,
+} from "@/lib/domain/opportunity";
 
 type Props = { params: Promise<{ id: string }> };
-const date = (value: string | null) => value ? new Intl.DateTimeFormat("en", { day: "numeric", month: "long", year: "numeric" }).format(new Date(`${value}T00:00:00`)) : "Not set";
+const date = (value: string | null) =>
+  value
+    ? new Intl.DateTimeFormat("en", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      }).format(new Date(`${value}T00:00:00`))
+    : "Not set";
 
 async function DiscoveryReview({ params }: Props) {
-  const { id } = await params; const discovery = await getDiscovery(id); if (!discovery) notFound();
-  const canApprove = discovery.discoveryStatus === "new" || discovery.discoveryStatus === "reviewing";
-  const scores = [["AIESEC relevance", discovery.relevanceScore], ["Visibility potential", discovery.visibilityScore], ["Networking value", discovery.networkingScore], ["Stakeholder value", discovery.stakeholderValueScore], ["Feasibility", discovery.feasibilityScore]];
-  return <section className="mx-auto max-w-5xl"><Button asChild variant="ghost" size="sm"><Link href="/discoveries"><ChevronLeft />Discoveries</Link></Button><div className="mt-4 flex flex-col justify-between gap-5 border-b border-slate-200 pb-6 sm:flex-row"><div><div className="flex flex-wrap gap-2"><DiscoveryStatusBadge status={discovery.discoveryStatus} /><OpportunityPriorityBadge priority={discovery.priority} /></div><h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">{discovery.title}</h1><p className="mt-2 text-sm text-slate-600">{discovery.organizationName ?? "Organization not identified"}</p></div>{discovery.approvedOpportunityId ? <Button asChild><Link href={`/opportunities/${discovery.approvedOpportunityId}`}>View official opportunity</Link></Button> : canApprove && <div className="flex flex-wrap gap-2"><form action={approveDiscovery}><input type="hidden" name="id" value={id} /><Button type="submit"><Check />Approve</Button></form><form action={setDiscoveryStatus}><input type="hidden" name="id" value={id} /><input type="hidden" name="status" value="rejected" /><Button type="submit" variant="outline"><X />Reject</Button></form><form action={setDiscoveryStatus}><input type="hidden" name="id" value={id} /><input type="hidden" name="status" value="duplicate" /><Button type="submit" variant="outline"><CopyX />Duplicate</Button></form></div>}</div>
-    <div className="mt-7 grid gap-6 lg:grid-cols-3"><div className="space-y-6 lg:col-span-2"><section className="rounded-lg border border-slate-200 bg-white p-5"><h2 className="font-semibold text-slate-950">Discovery brief</h2><dl className="mt-5 grid gap-5 sm:grid-cols-2"><div><dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Category</dt><dd className="mt-1 text-sm text-slate-800">{discovery.category ? OPPORTUNITY_CATEGORY_LABELS[discovery.category] : "Not set"}</dd></div><div><dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Representation</dt><dd className="mt-1 text-sm text-slate-800">{discovery.representationType ? REPRESENTATION_TYPE_LABELS[discovery.representationType] : "Not set"}</dd></div><div><dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Event date</dt><dd className="mt-1 text-sm text-slate-800">{date(discovery.eventDate)}</dd></div><div><dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Deadline</dt><dd className="mt-1 text-sm text-slate-800">{date(discovery.applicationDeadline)}</dd></div><div><dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Location</dt><dd className="mt-1 text-sm text-slate-800">{discovery.location ?? "Not set"}</dd></div></dl>{discovery.description && <p className="mt-6 whitespace-pre-wrap border-t border-slate-100 pt-5 text-sm leading-6 text-slate-700">{discovery.description}</p>}</section><section className="rounded-lg border border-slate-200 bg-white p-5"><h2 className="font-semibold text-slate-950">Research intelligence</h2><p className="mt-3 text-sm leading-6 text-slate-700">{discovery.recommendationSummary ?? "No recommendation summary was supplied."}</p>{discovery.researchNotes && <p className="mt-4 whitespace-pre-wrap border-t border-slate-100 pt-4 text-sm leading-6 text-slate-600">{discovery.researchNotes}</p>}</section><section className="rounded-lg border border-slate-200 bg-white p-5"><h2 className="font-semibold text-slate-950">Source</h2><dl className="mt-4 space-y-3 text-sm"><div><dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Source name</dt><dd className="mt-1 text-slate-700">{discovery.sourceName ?? "Not set"}</dd></div>{[ ["Event URL", discovery.eventUrl], ["Source URL", discovery.sourceUrl] ].map(([label, url]) => url && <div key={label as string}><dt className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</dt><dd className="mt-1"><a href={url as string} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-slate-900 underline underline-offset-4">Open link <ArrowUpRight className="size-3" /></a></dd></div>)}</dl></section></div>
-      <aside className="space-y-6"><section className="rounded-lg border border-slate-200 bg-white p-5"><h2 className="font-semibold text-slate-950">Evaluation</h2><div className="mt-4 rounded-md bg-slate-100 p-4"><p className="text-xs font-medium uppercase tracking-wide text-slate-500">Overall score</p><p className="mt-1 text-3xl font-semibold text-slate-950">{discovery.overallScore?.toFixed(1) ?? "—"}</p><div className="mt-2"><OpportunityPriorityBadge priority={discovery.priority} /></div></div><dl className="mt-4 divide-y divide-slate-100">{scores.map(([label, value]) => <div key={label as string} className="flex justify-between py-3 text-sm"><dt className="text-slate-600">{label}</dt><dd className="font-medium text-slate-900">{value ?? "—"}</dd></div>)}</dl></section>{discovery.sources.length > 0 && <section className="rounded-lg border border-slate-200 bg-white p-5"><h2 className="font-semibold text-slate-950">Supporting evidence</h2><ul className="mt-3 space-y-3">{discovery.sources.map((source) => <li key={source.id}><a href={source.url} target="_blank" rel="noreferrer" className="text-sm font-medium text-slate-900 underline underline-offset-4">{source.name ?? source.url}</a><p className="mt-1 text-xs text-slate-500">{source.type === "primary" ? "Primary source" : "Supporting source"}</p></li>)}</ul></section>}<section className="rounded-lg border border-slate-200 bg-white p-5"><h2 className="font-semibold text-slate-950">Review status</h2><form action={setDiscoveryStatus} className="mt-4 space-y-3"><input type="hidden" name="id" value={id} /><select className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" name="status" defaultValue={discovery.discoveryStatus}>{DISCOVERY_STATUSES.filter((status) => status !== "approved").map((status) => <option key={status} value={status}>{DISCOVERY_STATUS_LABELS[status]}</option>)}</select><Button type="submit" variant="outline" className="w-full">Update review status</Button></form></section></aside></div>
-  </section>;
+  const { id } = await params;
+  const discovery = await getDiscovery(id);
+  if (!discovery) notFound();
+  const canApprove =
+    discovery.discoveryStatus === "ai_found_needs_review" ||
+    discovery.discoveryStatus === "reviewing";
+  const scores = [
+    ["AIESEC relevance", discovery.relevanceScore],
+    ["Visibility potential", discovery.visibilityScore],
+    ["Networking value", discovery.networkingScore],
+    ["Stakeholder value", discovery.stakeholderValueScore],
+    ["Feasibility", discovery.feasibilityScore],
+  ];
+  return (
+    <section className="mx-auto max-w-5xl">
+      <Button asChild variant="ghost" size="sm">
+        <Link href="/discoveries">
+          <ChevronLeft />
+          Discoveries
+        </Link>
+      </Button>
+      <div className="mt-4 flex flex-col justify-between gap-5 border-b border-slate-200 pb-6 sm:flex-row">
+        <div>
+          <div className="flex flex-wrap gap-2">
+            <DiscoveryStatusBadge status={discovery.discoveryStatus} />
+            <RepresentationPurposeBadge
+              representationType={discovery.representationType}
+            />
+            <OpportunityPriorityBadge priority={discovery.priority} />
+          </div>
+          <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
+            {discovery.title}
+          </h1>
+          <p className="mt-2 text-sm text-slate-600">
+            {discovery.organizationName ?? "Organization not identified"}
+          </p>
+        </div>
+        {discovery.approvedOpportunityId ? (
+          <span className="text-sm font-medium text-emerald-700">Added to approved pipeline</span>
+        ) : (
+          canApprove && (
+            <div className="flex flex-wrap gap-2">
+              <form action={approveDiscovery}>
+                <input type="hidden" name="id" value={id} />
+                <Button type="submit">
+                  <Check />
+                  Approve
+                </Button>
+              </form>
+              <form action={assignDiscoveryToSelf}>
+                <input type="hidden" name="id" value={id} />
+                <Button type="submit" variant="outline">
+                  Assign to me
+                </Button>
+              </form>
+              <form action={prepareOutreachDraft}>
+                <input type="hidden" name="id" value={id} />
+                <Button type="submit" variant="outline">
+                  Prepare outreach
+                </Button>
+              </form>
+              <form action={setDiscoveryStatus}>
+                <input type="hidden" name="id" value={id} />
+                <input type="hidden" name="status" value="rejected" />
+                <Button type="submit" variant="outline">
+                  <X />
+                  Reject
+                </Button>
+              </form>
+              <form action={setDiscoveryStatus}>
+                <input type="hidden" name="id" value={id} />
+                <input type="hidden" name="status" value="duplicate" />
+                <Button type="submit" variant="outline">
+                  <CopyX />
+                  Duplicate
+                </Button>
+              </form>
+            </div>
+          )
+        )}
+      </div>
+      <div className="mt-7 grid gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
+          <section className="rounded-lg border border-slate-200 bg-white p-5">
+            <h2 className="font-semibold text-slate-950">Discovery brief</h2>
+            <dl className="mt-5 grid gap-5 sm:grid-cols-2">
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Category
+                </dt>
+                <dd className="mt-1 text-sm text-slate-800">
+                  {discovery.category
+                    ? OPPORTUNITY_CATEGORY_LABELS[discovery.category]
+                    : "Not set"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Representation
+                </dt>
+                <dd className="mt-1 text-sm text-slate-800">
+                  {discovery.representationType
+                    ? REPRESENTATION_TYPE_LABELS[discovery.representationType]
+                    : "Not set"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Event date
+                </dt>
+                <dd className="mt-1 text-sm text-slate-800">
+                  {date(discovery.eventDate)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Deadline
+                </dt>
+                <dd className="mt-1 text-sm text-slate-800">
+                  {date(discovery.applicationDeadline)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Location
+                </dt>
+                <dd className="mt-1 text-sm text-slate-800">
+                  {discovery.location ?? "Not set"}
+                </dd>
+              </div>
+            </dl>
+            {discovery.description && (
+              <p className="mt-6 whitespace-pre-wrap border-t border-slate-100 pt-5 text-sm leading-6 text-slate-700">
+                {discovery.description}
+              </p>
+            )}
+          </section>
+          <section className="rounded-lg border border-slate-200 bg-white p-5">
+            <h2 className="font-semibold text-slate-950">
+              Research intelligence
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-slate-700">
+              {discovery.recommendationSummary ??
+                "No recommendation summary was supplied."}
+            </p>
+            {discovery.researchNotes && (
+              <p className="mt-4 whitespace-pre-wrap border-t border-slate-100 pt-4 text-sm leading-6 text-slate-600">
+                {discovery.researchNotes}
+              </p>
+            )}
+          </section>
+          <section className="rounded-lg border border-slate-200 bg-white p-5">
+            <h2 className="font-semibold text-slate-950">Source</h2>
+            <dl className="mt-4 space-y-3 text-sm">
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Source name
+                </dt>
+                <dd className="mt-1 text-slate-700">
+                  {discovery.sourceName ?? "Not set"}
+                </dd>
+              </div>
+              {[
+                ["Event URL", discovery.eventUrl],
+                ["Source URL", discovery.sourceUrl],
+              ].map(
+                ([label, url]) =>
+                  url && (
+                    <div key={label as string}>
+                      <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                        {label}
+                      </dt>
+                      <dd className="mt-1">
+                        <a
+                          href={url as string}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-slate-900 underline underline-offset-4"
+                        >
+                          Open link <ArrowUpRight className="size-3" />
+                        </a>
+                      </dd>
+                    </div>
+                  ),
+              )}
+            </dl>
+          </section>
+        </div>
+        <aside className="space-y-6">
+          <section className="rounded-lg border border-slate-200 bg-white p-5">
+            <h2 className="font-semibold text-slate-950">Evaluation</h2>
+            <div className="mt-4 rounded-md bg-slate-100 p-4">
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                Overall score
+              </p>
+              <p className="mt-1 text-3xl font-semibold text-slate-950">
+                {discovery.overallScore?.toFixed(1) ?? "—"}
+              </p>
+              <div className="mt-2">
+                <OpportunityPriorityBadge priority={discovery.priority} />
+              </div>
+            </div>
+            <dl className="mt-4 divide-y divide-slate-100">
+              {scores.map(([label, value]) => (
+                <div
+                  key={label as string}
+                  className="flex justify-between py-3 text-sm"
+                >
+                  <dt className="text-slate-600">{label}</dt>
+                  <dd className="font-medium text-slate-900">{value ?? "—"}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+          {discovery.sources.length > 0 && (
+            <section className="rounded-lg border border-slate-200 bg-white p-5">
+              <h2 className="font-semibold text-slate-950">
+                Supporting evidence
+              </h2>
+              <ul className="mt-3 space-y-3">
+                {discovery.sources.map((source) => (
+                  <li key={source.id}>
+                    <a
+                      href={source.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-sm font-medium text-slate-900 underline underline-offset-4"
+                    >
+                      {source.name ?? source.url}
+                    </a>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {source.type === "primary"
+                        ? "Primary source"
+                        : "Supporting source"}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          <section className="rounded-lg border border-slate-200 bg-white p-5">
+            <h2 className="font-semibold text-slate-950">Review status</h2>
+            <form action={setDiscoveryStatus} className="mt-4 space-y-3">
+              <input type="hidden" name="id" value={id} />
+              <select
+                className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
+                name="status"
+                defaultValue={discovery.discoveryStatus}
+              >
+                {DISCOVERY_STATUSES.filter(
+                  (status) => status !== "approved",
+                ).map((status) => (
+                  <option key={status} value={status}>
+                    {DISCOVERY_STATUS_LABELS[status]}
+                  </option>
+                ))}
+              </select>
+              <Button type="submit" variant="outline" className="w-full">
+                Update review status
+              </Button>
+            </form>
+          </section>
+        </aside>
+      </div>
+    </section>
+  );
 }
 
-export default function DiscoveryDetailPage({ params }: Props) { return <Suspense fallback={<div className="h-96 animate-pulse rounded-lg bg-slate-100" aria-busy="true" />}><DiscoveryReview params={params} /></Suspense>; }
+export default function DiscoveryDetailPage({ params }: Props) {
+  return (
+    <Suspense
+      fallback={
+        <div
+          className="h-96 animate-pulse rounded-lg bg-slate-100"
+          aria-busy="true"
+        />
+      }
+    >
+      <DiscoveryReview params={params} />
+    </Suspense>
+  );
+}
