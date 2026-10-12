@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -10,6 +10,8 @@ export default async function WhatsAppIntakePage() {
   const auth = await createClient();
   const { data: { user } } = await auth.auth.getUser();
   if (!user) redirect("/login");
+  const allowedEmails = (process.env.WHATSAPP_INTAKE_ADMIN_EMAILS ?? "").split(",").map((email) => email.trim().toLowerCase()).filter(Boolean);
+  if (!user.email || !allowedEmails.includes(user.email.toLowerCase())) notFound();
 
   const admin = createAdminClient();
   const { data: rows, error } = await admin.from("whatsapp_intake_messages")
@@ -54,7 +56,7 @@ export default async function WhatsAppIntakePage() {
       <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900">
         <table className="min-w-full text-left text-sm">
           <thead className="border-b border-slate-800 text-slate-400"><tr><th className="px-4 py-3">Member</th><th className="px-4 py-3">Unique submissions</th><th className="px-4 py-3">Approved</th><th className="px-4 py-3">Failed</th></tr></thead>
-          <tbody>{leaders.map((member) => <tr key={member.name} className="border-b border-slate-800/60">
+          <tbody>{leaders.map((member) => <tr key={member.name + ":" + member.submitted + ":" + member.approved} className="border-b border-slate-800/60">
             <td className="px-4 py-3 font-medium text-slate-100">{member.name}</td>
             <td className="px-4 py-3">{member.submitted}</td><td className="px-4 py-3">{member.approved}</td><td className="px-4 py-3">{member.failed}</td>
           </tr>)}</tbody>
