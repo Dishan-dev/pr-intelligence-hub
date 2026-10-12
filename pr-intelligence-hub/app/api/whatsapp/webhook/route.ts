@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyMetaSignature } from "@/lib/whatsapp/verify";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { extractWhatsAppOpportunity } from "@/lib/whatsapp/extract";
+import { extractWhatsAppImageOpportunity } from "@/lib/whatsapp/image-extract";
 import { findDuplicateDiscovery } from "@/lib/whatsapp/deduplicate";
 import { sendGoogleChatNotification } from "@/lib/notifications/google-chat";
 
@@ -18,23 +19,25 @@ export async function GET(request: Request) {
   return new Response("Forbidden", { status: 403 });
 }
 
-type IncomingMessage = { id?: string; from?: string; type?: string; text?: { body?: string } };
+type IncomingMessage = { id?: string; from?: string; type?: string; text?: { body?: string }; image?: { id?: string; caption?: string } };
 type WebhookPayload = { entry?: Array<{ changes?: Array<{ value?: { messages?: IncomingMessage[] } }> }> };
 
 async function processMessage(message: IncomingMessage) {
-  if (!message.id || !message.from || message.type !== "text" || !message.text?.body) return;
+  if (!message.id || !message.from || !((message.type === "text" && message.text?.body) || (message.type === "image" && message.image?.id))) return;
   const db = createAdminClient();
   const { error: receiptError } = await db.from("whatsapp_intake_messages").insert({
     provider_message_id: message.id,
     sender_phone: message.from,
-    message_text: message.text.body.slice(0, 12000),
+    message_text: message.type === "image" ? `[Image submission] ${(message.image?.caption ?? "").slice(0, 1000)}` : (message.text?.body ?? "").slice(0, 12000),
   });
   if (receiptError) {
     if (receiptError.code === "23505") return;
     throw receiptError;
   }
   try {
-    const opportunity = await extractWhatsAppOpportunity(message.text.body);
+    const opportunity = message.type === "image" && message.image?.id
+      ? await extractWhatsAppImageOpportunity(message.image.id, message.image.caption)
+      : await extractWhatsAppOpportunity(message.text?.body ?? "");
     if (!opportunity) {
       await db.from("whatsapp_intake_messages").update({ processing_status: "ignored" }).eq("provider_message_id", message.id);
       return;
