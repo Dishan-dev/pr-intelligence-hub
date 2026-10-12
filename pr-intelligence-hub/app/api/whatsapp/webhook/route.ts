@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { verifyMetaSignature } from "@/lib/whatsapp/verify";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { extractWhatsAppOpportunity } from "@/lib/whatsapp/extract";
 import { canonicalizeUrl, normalizeResearchText } from "@/lib/research/duplicate";
@@ -16,14 +16,6 @@ export async function GET(request: Request) {
     return new Response(challenge, { status: 200, headers: { "Content-Type": "text/plain" } });
   }
   return new Response("Forbidden", { status: 403 });
-}
-
-function signatureValid(body: string, signature: string | null) {
-  const secret = process.env.META_APP_SECRET;
-  if (!secret || !signature?.startsWith("sha256=")) return false;
-  const actual = Buffer.from(signature.slice(7), "hex");
-  const expected = createHmac("sha256", secret).update(body).digest();
-  return actual.length === expected.length && timingSafeEqual(actual, expected);
 }
 
 type IncomingMessage = { id?: string; from?: string; type?: string; text?: { body?: string } };
@@ -90,7 +82,7 @@ async function processMessage(message: IncomingMessage) {
 
 export async function POST(request: Request) {
   const body = await request.text();
-  if (!signatureValid(body, request.headers.get("x-hub-signature-256"))) {
+  if (!verifyMetaSignature(body, request.headers.get("x-hub-signature-256"), process.env.META_APP_SECRET)) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
   let payload: WebhookPayload;
