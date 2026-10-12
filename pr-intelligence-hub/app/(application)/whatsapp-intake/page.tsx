@@ -1,17 +1,9 @@
 import Link from "next/link";
-import { redirect, notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const metadata = { title: "WhatsApp Intake" };
 
 export default async function WhatsAppIntakePage() {
-  const auth = await createClient();
-  const { data: { user } } = await auth.auth.getUser();
-  if (!user) redirect("/login");
-  const allowedEmails = (process.env.WHATSAPP_INTAKE_ADMIN_EMAILS ?? "").split(",").map((email) => email.trim().toLowerCase()).filter(Boolean);
-  if (!user.email || !allowedEmails.includes(user.email.toLowerCase())) notFound();
-
   const admin = createAdminClient();
   const { data: rows, error } = await admin.from("whatsapp_intake_messages")
     .select("sender_phone,processing_status,discovery_id,created_at")
@@ -62,7 +54,7 @@ export default async function WhatsAppIntakePage() {
         </table>
         {leaders.length === 0 && <p className="p-5 text-sm text-slate-400">No WhatsApp submissions yet. Connect Meta's test number to begin.</p>}
       </div>
-      <p className="text-xs text-slate-500">Private operational view. Do not share member attribution without consent.</p>
+      <p className="text-xs text-slate-500">Shared member leaderboard. Do not redistribute member attribution without consent.</p>
     </section>
   );
 }
