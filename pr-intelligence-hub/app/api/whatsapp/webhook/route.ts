@@ -6,7 +6,6 @@ import { extractWhatsAppImageOpportunity } from "@/lib/whatsapp/image-extract";
 import { findDuplicateDiscovery } from "@/lib/whatsapp/deduplicate";
 import { sendGoogleChatNotification } from "@/lib/notifications/google-chat";
 
-export const runtime = "nodejs";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
