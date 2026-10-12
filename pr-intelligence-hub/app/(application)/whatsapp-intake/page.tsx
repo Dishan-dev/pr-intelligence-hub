@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const metadata = { title: "WhatsApp Intake" };
-export const dynamic = "force-dynamic";
 
 export default async function WhatsAppIntakePage() {
   const auth = await createClient();
