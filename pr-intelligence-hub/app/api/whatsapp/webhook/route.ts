@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyMetaSignature } from "@/lib/whatsapp/verify";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { extractWhatsAppOpportunity } from "@/lib/whatsapp/extract";
-import { canonicalizeUrl, normalizeResearchText } from "@/lib/research/duplicate";
+import { findDuplicateDiscovery } from "@/lib/whatsapp/deduplicate";
 import { sendGoogleChatNotification } from "@/lib/notifications/google-chat";
 
 export const runtime = "nodejs";
@@ -42,12 +42,7 @@ async function processMessage(message: IncomingMessage) {
     const { data: existing, error: lookupError } = await db.from("discovered_opportunities")
       .select("id,title,organization_name,event_date,event_url,source_url").order("created_at", { ascending: false }).limit(500);
     if (lookupError) throw lookupError;
-    const duplicate = (existing ?? []).find((item) => (
-      (opportunity.eventUrl && [item.event_url, item.source_url].some((url) => url && canonicalizeUrl(url) === canonicalizeUrl(opportunity.eventUrl))) ||
-      (normalizeResearchText(item.title) === normalizeResearchText(opportunity.title) &&
-        normalizeResearchText(item.organization_name) === normalizeResearchText(opportunity.organizationName) &&
-        item.event_date === opportunity.eventDate)
-    ));
+    const duplicate = findDuplicateDiscovery(opportunity, existing ?? []);
     if (duplicate) {
       await db.from("whatsapp_intake_messages").update({ processing_status: "ignored", discovery_id: duplicate.id }).eq("provider_message_id", message.id);
       return;
