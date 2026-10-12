@@ -8,7 +8,10 @@ export default async function WhatsAppIntakePage() {
   const { data: rows, error } = await admin.from("whatsapp_intake_messages")
     .select("sender_phone,processing_status,discovery_id,created_at")
     .order("created_at", { ascending: false }).limit(2000);
-  if (error) return <p className="text-rose-400">WhatsApp intake is not configured yet. Apply the migration before opening this page.</p>;
+  if (error) {
+    console.error("WhatsApp intake query failed", { code: error.code, message: error.message, details: error.details });
+    return <p className="text-rose-400">Unable to load WhatsApp intake data (Supabase error: {error.code ?? "unknown"}). Please check the deployment logs and Supabase project configuration.</p>;
+  }
 
   const { data: members } = await admin.from("whatsapp_member_links").select("phone_number,member_name");
   const memberNames = new Map((members ?? []).map((member) => [member.phone_number, member.member_name]));
