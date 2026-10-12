@@ -44,7 +44,11 @@ async function processMessage(message: IncomingMessage) {
     const { data: existing, error: lookupError } = await db.from("discovered_opportunities")
       .select("id,title,organization_name,event_date,event_url,source_url").order("created_at", { ascending: false }).limit(500);
     if (lookupError) throw lookupError;
-    const duplicate = findDuplicateDiscovery(opportunity, existing ?? []);
+    if (!opportunity.title) {
+      await db.from("whatsapp_intake_messages").update({ processing_status: "ignored" }).eq("provider_message_id", message.id);
+      return;
+    }
+    const duplicate = findDuplicateDiscovery({ ...opportunity, title: opportunity.title }, existing ?? []);
     if (duplicate) {
       await db.from("whatsapp_intake_messages").update({ processing_status: "ignored", discovery_id: duplicate.id }).eq("provider_message_id", message.id);
       return;
