@@ -45,7 +45,7 @@ export async function getDiscoveries(filters: DiscoveryFilters = {}, pagination:
   if (filters.status) {
     query = query.eq("discovery_status", filters.status);
   } else {
-    query = query.in("discovery_status", ["ai_found_needs_review", "reviewing", "possible_duplicate"]);
+    query = query.in("discovery_status", ["new", "reviewing"]);
   }
   if (filters.category) query = query.eq("category", filters.category);
   if (filters.representationType) query = query.eq("representation_type", filters.representationType);
