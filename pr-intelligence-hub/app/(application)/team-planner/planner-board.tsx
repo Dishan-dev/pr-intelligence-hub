@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { CalendarDays, CheckCircle2, CircleDashed, Clock3, Filter, Plus, Search, UserRound, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { CalendarDays, CheckCircle2, CircleDashed, Filter, Plus, Search, UserRound, X } from "lucide-react";
 
 import { addPlannerTask, updatePlannerTask } from "./actions";
 import {
   CRITERIA, CRITERION_LABELS, STATUS_LABELS, TASK_STATUSES, TEAM_LABELS, TEAMS,
   addDays, shortDate, weekEnd, weekStart,
-  type PrCriterion, type PrMember, type PrPlan, type PrTask, type PrTeam,
+  type PrMember, type PrPlan, type PrTask, type PrTeam,
 } from "@/lib/pr-planner/domain";
 
 type Props = { plan: PrPlan; tasks: PrTask[]; members: PrMember[]; preview?: boolean };
@@ -111,7 +111,11 @@ export function PlannerBoard({plan,tasks,members,preview=false}:Props) {
           <Filter className="mx-auto size-7 text-slate-500"/><p className="mt-2 text-sm text-slate-300">No tasks match the current filters.</p>
         </div>}
         {filtered.map((task)=>{
-          const overdue=task.status!=="completed"&&task.due_on<new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Colombo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+          const formatter=new Intl.DateTimeFormat("en-GB",{timeZone:"Asia/Colombo",year:"numeric",month:"2-digit",day:"2-digit"});
+          const parts=formatter.formatToParts(new Date());
+          const get=(kind:string)=>parts.find((p)=>p.type===kind)?.value??"";
+          const today=get("year")+"-"+get("month")+"-"+get("day");
+          const overdue=task.status!=="completed"&&task.due_on<today;
           return <article key={task.id} className={"min-w-0 rounded-xl border bg-slate-900/70 p-4 transition "+(selectedId===task.id?"border-emerald-500":"border-slate-800 hover:border-slate-600")}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className={"rounded-md border px-2 py-1 text-[11px] font-semibold "+teamAccent[task.team]}>{TEAM_LABELS[task.team]}</span>
@@ -177,7 +181,7 @@ export function PlannerBoard({plan,tasks,members,preview=false}:Props) {
     </div>
   </div>;
 }
-function Stat({icon,name,value}:{icon:React.ReactNode;name:string;value:number}) {
+function Stat({icon,name,value}:{icon:ReactNode;name:string;value:number}) {
   return <div className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/70 px-4 py-3">
     <span className="grid size-9 place-items-center rounded-lg bg-slate-800 text-slate-400">{icon}</span>
     <div><p className="text-xs text-slate-500">{name}</p><p className="text-xl font-bold text-white">{value}</p></div>
