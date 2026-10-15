@@ -52,6 +52,7 @@ export interface PrTask {
   status: PrTaskStatus;
   evidence_url: string | null;
   outcome_notes: string;
+  verification_status: "unreviewed" | "verified" | "not_qualifying";
 }
 
 // Parse date-only strings as UTC calendar dates, never as local timestamps.
