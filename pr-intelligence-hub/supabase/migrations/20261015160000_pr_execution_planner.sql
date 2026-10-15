@@ -38,6 +38,7 @@ create table public.pr_plan_tasks (
   )),
   evidence_url text check (evidence_url is null or char_length(evidence_url) <= 2000),
   outcome_notes text not null default '',
+  verification_status text not null default 'unreviewed' check (verification_status in ('unreviewed','verified','not_qualifying')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint pr_task_date_order check (due_on >= starts_on)
