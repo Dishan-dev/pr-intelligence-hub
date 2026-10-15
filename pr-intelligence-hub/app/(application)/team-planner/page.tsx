@@ -18,6 +18,7 @@ const notices: Record<string, string> = {
   invalid_task: "Check task fields, member assignment and deadline.",
   invalid_evidence: "Evidence must be an HTTP or HTTPS URL.",
   save_failed: "Could not save. Check the database migration and retry.",
+  verification_requires_evidence: "A verified outcome must be completed and have an evidence link.",
 };
 const field = "mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white outline-none focus:border-emerald-500";
 const button = "inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-slate-950 hover:bg-emerald-400";
@@ -52,7 +53,7 @@ export default async function TeamPlannerPage({searchParams}:{searchParams:Searc
   const plans=(planResult.data??[]) as PrPlan[];
   const selected=plans.find((p)=>p.id===query.plan)??plans[0]??null;
   const taskResult=selected?await supabase.from("pr_plan_tasks")
-    .select("id,plan_id,title,description,team,target_criterion,member_id,week_number,starts_on,due_on,status,evidence_url,outcome_notes")
+    .select("id,plan_id,title,description,team,target_criterion,member_id,week_number,starts_on,due_on,status,evidence_url,outcome_notes,verification_status")
     .eq("plan_id",selected.id).order("week_number").order("due_on").limit(500)
     :{data:[],error:null};
   const tasks=(taskResult.data??[]) as PrTask[];
@@ -115,7 +116,7 @@ export default async function TeamPlannerPage({searchParams}:{searchParams:Searc
       <PlannerBoard
         preview
         plan={{id:"sample",name:"Sample PR cycle",starts_on:"2026-10-19",weeks_count:4}}
-        tasks={starterTasks("2026-10-19").map((task,i)=>({id:"sample-"+i,plan_id:"sample",member_id:null,evidence_url:null,outcome_notes:"",...task}))}
+        tasks={starterTasks("2026-10-19").map((task,i)=>({id:"sample-"+i,plan_id:"sample",member_id:null,evidence_url:null,outcome_notes:"",verification_status:"unreviewed" as const,...task}))}
         members={[]}
       />
     </div>}
