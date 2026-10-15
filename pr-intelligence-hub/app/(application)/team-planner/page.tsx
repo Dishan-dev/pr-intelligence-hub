@@ -3,7 +3,7 @@ import Link from "next/link";
 import { CalendarRange, Plus, Users } from "lucide-react";
 import { addPlannerMember, createPlannerPlan, togglePlannerMember } from "./actions";
 import { PlannerBoard } from "./planner-board";
-import { TEAM_LABELS, TEAMS, addDays, shortDate, type PrMember, type PrPlan, type PrTask } from "@/lib/pr-planner/domain";
+import { TEAM_LABELS, TEAMS, addDays, shortDate, type PrMember, type PrPlan, type PrTask, starterTasks } from "@/lib/pr-planner/domain";
 import { plannerSession } from "@/lib/pr-planner/session";
 
 export const metadata = { title: "Team Planner" };
@@ -107,9 +107,17 @@ export default async function TeamPlannerPage({searchParams}:{searchParams:Searc
           {plan.name} · {shortDate(plan.starts_on)}</Link>)}
       </nav>}
       {taskResult.error?<p className="text-sm text-rose-400" role="alert">Unable to load tasks ({taskResult.error.code}). Check the migration.</p>:<PlannerBoard plan={selected} tasks={tasks} members={members}/>}
-    </>:<div className="rounded-xl border border-dashed border-slate-700 bg-slate-900/40 px-6 py-12 text-center">
-      <CalendarRange className="mx-auto size-9 text-slate-500"/><h2 className="mt-3 text-lg font-semibold text-white">Create your first PR execution cycle</h2>
-      <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-400">Add your four Internal PR, four External PR and two Campaign members, then create a cycle above to generate the first four-week plan.</p>
+    </>:<div className="space-y-4">
+      <div className="rounded-xl border border-dashed border-slate-700 bg-slate-900/40 px-6 py-7">
+        <h2 className="text-lg font-semibold text-white">Sample week — ready to preview</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">These ten example tasks show the 19–25 October workflow. Add your team roster and create a plan above to save and assign them.</p>
+      </div>
+      <PlannerBoard
+        preview
+        plan={{id:"sample",name:"Sample PR cycle",starts_on:"2026-10-19",weeks_count:4}}
+        tasks={starterTasks("2026-10-19").map((task,i)=>({id:"sample-"+i,plan_id:"sample",member_id:null,evidence_url:null,outcome_notes:"",...task}))}
+        members={[]}
+      />
     </div>}
   </section>;
 }
