@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { CalendarDays, ClipboardList, GraduationCap, Inbox, LayoutDashboard, Menu, Newspaper, X } from "lucide-react";
+import { CalendarDays, CalendarRange, ClipboardList, GraduationCap, Inbox, LayoutDashboard, Menu, Newspaper, X } from "lucide-react";
 
 import { LogoutButton } from "@/components/logout-button";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,7 @@ const navigation = [
   { href: "/clubs-societies", label: "Clubs & societies", icon: GraduationCap },
   { href: "/media-opportunities", label: "Media opportunities", icon: Newspaper },
   { href: "/pr-calendar", label: "PR Calendar", icon: CalendarDays },
+  { href: "/team-planner", label: "Team Planner", icon: CalendarRange },
   { href: "/templates", label: "Templates", icon: ClipboardList },
 ] as const;
 
