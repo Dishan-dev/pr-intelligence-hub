@@ -16,6 +16,9 @@ export function ClubsLeadsTable({ leads }: { leads: ClubLead[] }) {
   const [allLeads, setAllLeads] = useState(leads);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
+  const [area, setArea] = useState("");
+  const [institution, setInstitution] = useState("");
+  const [emailOnly, setEmailOnly] = useState(false);
   const [page, setPage] = useState(1);
   const [selectedLead, setSelectedLead] = useState<ClubLead | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -35,23 +38,28 @@ export function ClubsLeadsTable({ leads }: { leads: ClubLead[] }) {
     () => Array.from(new Set(allLeads.map((lead) => lead.category))).sort(),
     [allLeads],
   );
+  const areas = useMemo(() => Array.from(new Set(allLeads.map((lead) => lead.area))).sort(), [allLeads]);
+  const institutions = useMemo(() => Array.from(new Set(allLeads.map((lead) => lead.institution))).sort(), [allLeads]);
   const filteredLeads = useMemo(
     () =>
       allLeads.filter((lead) =>
         (category === "" || lead.category === category) &&
+        (area === "" || lead.area === area) &&
+        (institution === "" || lead.institution === institution) &&
+        (!emailOnly || Boolean(lead.email?.length)) &&
         [lead.id, lead.name, lead.institution, lead.category, lead.area, lead.status]
           .join(" ")
           .toLowerCase()
           .includes(normalizedSearch),
       ),
-    [allLeads, category, normalizedSearch],
+    [allLeads, category, area, institution, emailOnly, normalizedSearch],
   );
   const totalPages = Math.max(1, Math.ceil(filteredLeads.length / pageSize));
   const visibleLeads = filteredLeads.slice((page - 1) * pageSize, page * pageSize);
 
   useEffect(() => {
     setPage(1);
-  }, [category, normalizedSearch]);
+  }, [category, area, institution, emailOnly, normalizedSearch]);
 
   function addLead(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -109,6 +117,9 @@ export function ClubsLeadsTable({ leads }: { leads: ClubLead[] }) {
             </option>
           ))}
         </select>
+        <select value={area} onChange={(e) => setArea(e.target.value)} aria-label="Filter by area" className="max-w-40 bg-slate-800 rounded px-2 py-2 text-xs text-slate-200"><option value="">All areas</option>{areas.map((value) => <option key={value} value={value}>{value}</option>)}</select>
+        <select value={institution} onChange={(e) => setInstitution(e.target.value)} aria-label="Filter by institution" className="max-w-44 bg-slate-800 rounded px-2 py-2 text-xs text-slate-200"><option value="">All institutions</option>{institutions.map((value) => <option key={value} value={value}>{value}</option>)}</select>
+        <label className="flex items-center gap-1 text-xs text-slate-300"><input type="checkbox" checked={emailOnly} onChange={(e) => setEmailOnly(e.target.checked)}/> Has email</label>
         <span className="whitespace-nowrap text-xs text-slate-500">{filteredLeads.length} of {allLeads.length}</span>
         <ExportCsvButton filename="clubs-and-societies.csv" headers={["ID", "Name", "Institution", "Category", "Area", "Emails", "Phone", "Contact", "Priority", "Pitch", "Best use", "Next action", "Status", "Page"]} rows={allLeads.map((lead) => [lead.id, lead.name, lead.institution, lead.category, lead.area, lead.email?.join("; "), lead.phone, lead.contact, lead.priority, lead.pitch, lead.bestUse, lead.nextAction, lead.status, lead.page])} />
         <button
@@ -326,6 +337,7 @@ export function ClubsLeadsTable({ leads }: { leads: ClubLead[] }) {
                 <p className="mt-1 text-sm leading-5 text-slate-300">{selectedLead.nextAction}</p>
               </div>
             </div>
+            {selectedLead.email?.length ? <a href={`mailto:${selectedLead.email[0]}?subject=${encodeURIComponent("Collaboration Opportunity | AIESEC in Colombo South")}&body=${encodeURIComponent(`Dear ${selectedLead.name} Team,\n\nGreetings from AIESEC in Colombo South at the University of Moratuwa!\n\nWe are reaching out to explore potential collaboration with your club on upcoming projects and initiatives. We would be glad to contribute through youth volunteer engagement, event promotion, university outreach, knowledge sharing and joint leadership or community-impact activities, depending on your needs.\n\nWe would love to learn more about your upcoming projects and discuss how we could support each other. Would your team be available for a short 15–20 minute online meeting at a convenient time?\n\nWe look forward to hearing from you.\n\nBest regards,\nPR Team\nAIESEC in Colombo South\nUniversity of Moratuwa`)}`} className="mb-4 inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400"><Mail className="size-4"/> Draft collaboration email</a> : <p className="mb-4 text-xs text-amber-400">No verified club email available. Use the public contact page.</p>}
             <a
               href={selectedLead.page}
               target="_blank"
