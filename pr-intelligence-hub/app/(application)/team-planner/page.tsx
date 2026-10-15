@@ -30,11 +30,7 @@ function nextMonday() {
 }
 export default async function TeamPlannerPage({searchParams}:{searchParams:SearchParams}) {
   const {supabase,user} = await plannerSession();
-  if (!user) return <section className="rounded-xl border border-slate-800 bg-slate-900 p-6">
-    <h1 className="text-2xl font-semibold text-white">Sign in to use Team Planner</h1>
-    <p className="mt-2 text-sm text-slate-400">Your roster and plans are stored privately for your account.</p>
-    <Link href="/auth/login" className={button+" mt-4"}>Sign in</Link>
-  </section>;
+  if (!user) return <section className="space-y-4"><h1 className="text-3xl font-semibold text-white">Team Planner</h1><p className="text-sm text-slate-400">Preview the four-week PR plan without signing in. Editing is temporarily unavailable in public preview.</p><PlannerBoard preview plan={{id:"sample",name:"Sample PR cycle",starts_on:"2026-10-19",weeks_count:4}} tasks={starterTasks("2026-10-19").map((task,i)=>({id:"sample-"+i,plan_id:"sample",member_id:null,evidence_url:null,outcome_notes:"",verification_status:"unreviewed" as const,...task}))} members={[]}/></section>;
   const query = await searchParams;
   const [memberResult,planResult] = await Promise.all([
     supabase.from("pr_team_members").select("id,name,team,is_active").eq("owner_id",user.id).order("created_at"),
