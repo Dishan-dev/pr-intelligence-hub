@@ -49,6 +49,7 @@ export function PlannerBoard({plan,tasks,members,preview=false}:Props) {
   const complete=weekly.filter((t)=>t.status==="completed").length;
   const awaiting=weekly.filter((t)=>t.status==="waiting").length;
   const assigned=weekly.filter((t)=>Boolean(t.member_id)).length;
+  const verified=weekly.filter((t)=>t.verification_status==="verified").length;
   useEffect(()=>{setSelectedId(null);setShowCreate(false)},[week]);
   useEffect(()=>{
     if ((selected||showCreate)&&editorRef.current&&window.matchMedia("(max-width: 1023px)").matches) {
@@ -85,7 +86,7 @@ export function PlannerBoard({plan,tasks,members,preview=false}:Props) {
 
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div><h3 className="text-lg font-semibold text-white">Week {week} assignments</h3>
-        <p className="mt-1 text-xs text-slate-400">{shortDate(weekStartDate)} – {shortDate(weekEnd(plan.starts_on,week))} · {awaiting} waiting for responses</p></div>
+        <p className="mt-1 text-xs text-slate-400">{shortDate(weekStartDate)} – {shortDate(weekEnd(plan.starts_on,week))} · {awaiting} awaiting responses · {verified} evidence-verified</p></div>
       {!preview&&<button className={primary} type="button" onClick={()=>{setSelectedId(null);setShowCreate(true)}}><Plus className="size-4"/> New task</button>}
     </div>
     <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto]">
@@ -120,6 +121,8 @@ export function PlannerBoard({plan,tasks,members,preview=false}:Props) {
               <span className={"rounded-md border px-2 py-1 text-[11px] font-semibold "+teamAccent[task.team]}>{TEAM_LABELS[task.team]}</span>
               <span className={"rounded-md border px-2 py-1 text-[11px] "+statusStyle[task.status]}>{STATUS_LABELS[task.status]}</span>
             </div>
+            {task.verification_status==="verified"&&<p className="mt-2 text-[11px] font-semibold text-emerald-300">✓ Evidence verified</p>}
+            {task.verification_status==="not_qualifying"&&<p className="mt-2 text-[11px] font-semibold text-amber-300">Does not qualify as a PR achievement</p>}
             <h4 className="mt-3 line-clamp-2 text-sm font-semibold leading-6 text-white">{task.title}</h4>
             <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-400">{task.description}</p>
             <div className="mt-3 border-t border-slate-800 pt-3">
@@ -174,6 +177,9 @@ export function PlannerBoard({plan,tasks,members,preview=false}:Props) {
             <label className={label}>Due date<input type="date" name="due_on" required className={input} min={selected.starts_on} max={weekEnd(plan.starts_on,selected.week_number)} defaultValue={selected.due_on}/></label>
             <label className={label}>Evidence link<input type="url" name="evidence_url" maxLength={2000} placeholder="https://..." defaultValue={selected.evidence_url??""} className={input}/></label>
             <label className={label}>Outcome / follow-up notes<textarea rows={4} name="outcome_notes" maxLength={2000} defaultValue={selected.outcome_notes} className={input}/></label>
+            <label className={label}>PR evidence review<select name="verification_status" defaultValue={selected.verification_status} className={input}>
+              <option value="unreviewed">Not yet reviewed</option><option value="verified">Verified against official criteria</option><option value="not_qualifying">Does not qualify</option>
+            </select></label>
             <p className="text-xs leading-5 text-slate-500">Marking a task completed records delivery only. Confirmed PR achievement counts require separate review of the official criteria and evidence.</p>
             <button type="submit" className={primary+" w-full"}><CheckCircle2 className="size-4"/> Save changes</button>
           </form>}
