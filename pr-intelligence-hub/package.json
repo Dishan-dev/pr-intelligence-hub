@@ -5,7 +5,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test": "node --experimental-strip-types --test lib/domain/opportunity-score.test.ts lib/domain/opportunity-form.test.ts lib/research/duplicate.test.ts lib/whatsapp/verify.test.ts lib/whatsapp/deduplicate.test.ts"
+    "test": "node --experimental-strip-types --test lib/domain/opportunity-score.test.ts lib/domain/opportunity-form.test.ts lib/research/duplicate.test.ts lib/whatsapp/verify.test.ts lib/whatsapp/deduplicate.test.ts lib/pr-planner/domain.test.ts"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.3.1",
