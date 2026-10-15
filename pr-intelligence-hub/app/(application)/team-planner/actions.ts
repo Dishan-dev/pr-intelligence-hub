@@ -136,6 +136,7 @@ export async function updatePlannerTask(formData: FormData) {
   const evidence = textValue(formData, "evidence_url", 2000);
   const outcome = textValue(formData, "outcome_notes", 2000);
   const title = textValue(formData, "title", 200);
+  const description = textValue(formData, "description", 2000);
   const criterion = textValue(formData, "target_criterion", 60);
   const dueOn = textValue(formData, "due_on", 10);
   const { data: task } = await supabase.from("pr_plan_tasks")
@@ -159,8 +160,10 @@ export async function updatePlannerTask(formData: FormData) {
   }
   const { error } = await supabase.from("pr_plan_tasks")
     .update({
-      title, target_criterion: criterion, due_on: dueOn,
-      member_id: memberId || null, status, evidence_url: evidence || null,
+      title, description, target_criterion: criterion, due_on: dueOn,
+      member_id: memberId || null,
+      status: !memberId && status === "assigned" ? "backlog" : memberId && status === "backlog" ? "assigned" : status,
+      evidence_url: evidence || null,
       outcome_notes: outcome,
     }).eq("id", id).eq("plan_id", planId);
   if (error) redirect(note("save_failed", planId));
