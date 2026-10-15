@@ -160,6 +160,7 @@ export function PlannerBoard({plan,tasks,members,preview=false}:Props) {
           <form key={selected.id} action={updatePlannerTask} className="space-y-3">
             <input type="hidden" name="plan_id" value={plan.id}/><input type="hidden" name="task_id" value={selected.id}/>
             <label className={label}>Task title<input name="title" required maxLength={200} defaultValue={selected.title} className={input}/></label>
+            <label className={label}>Description<textarea name="description" rows={3} maxLength={2000} defaultValue={selected.description} className={input}/></label>
             <div className="grid gap-3 sm:grid-cols-2">
               <label className={label}>Assigned member<select name="member_id" defaultValue={selected.member_id??""} className={input}>
                 <option value="">Unassigned</option>{optionMembers(selected.team).map((m)=><option key={m.id} value={m.id}>{m.name}{m.is_active?"":" (paused)"}</option>)}
