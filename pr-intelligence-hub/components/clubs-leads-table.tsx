@@ -6,6 +6,17 @@ import { ExternalLink, Mail, Phone, Search, X } from "lucide-react";
 import { ExportCsvButton } from "@/components/export-csv-button";
 import type { ClubLead } from "@/lib/data/clubs-societies";
 
+
+const SENDER_ACCOUNT = "dishan.bashitha@aiesec.net";
+function gmailDraftUrl(lead: ClubLead) {
+  const recipient = lead.email?.[0];
+  if (!recipient) return null;
+  const subject = "Collaboration Opportunity | AIESEC in Colombo South";
+  const body = `Dear ${lead.name} Team,\n\nGreetings from AIESEC in Colombo South at the University of Moratuwa!\n\nWe would love to explore collaboration opportunities with your club, particularly around ${lead.pitch.toLowerCase()}. We are open to supporting your upcoming projects through youth volunteer engagement, university outreach, promotion, event representation, and joint initiatives where relevant.\n\nCould we arrange a short 15–20 minute online meeting with your team to discuss possible collaboration and learn more about your upcoming activities? Please let us know a convenient time.\n\nLooking forward to hearing from you.\n\nBest regards,\nDishan Bashitha\nAIESEC in Colombo South\nUniversity of Moratuwa`;
+  const params = new URLSearchParams({view:"cm",fs:"1",to:recipient,su:subject,body});
+  return `https://mail.google.com/mail/u/${encodeURIComponent(SENDER_ACCOUNT)}/?${params.toString()}`;
+}
+
 const priorityStyles = {
   High: "bg-rose-500/15 text-rose-400 border border-rose-500/20",
   "Medium-High": "bg-amber-500/15 text-amber-400 border border-amber-500/20",
@@ -134,11 +145,11 @@ export function ClubsLeadsTable({ leads }: { leads: ClubLead[] }) {
         <table className="w-full table-fixed text-left text-sm">
           <thead className="border-b border-slate-800 bg-slate-800/60 text-xs font-medium uppercase tracking-wide text-slate-400">
             <tr>
-              <th className="w-[34%] px-4 py-3">Lead</th>
-              <th className="w-[23%] px-4 py-3">Institution / area</th>
-              <th className="w-[18%] px-4 py-3">Category</th>
-              <th className="w-[11%] px-4 py-3">Priority</th>
-              <th className="w-[14%] px-4 py-3">Status</th>
+              <th className="w-[29%] px-4 py-3">Lead</th>
+              <th className="w-[20%] px-4 py-3">Institution / area</th>
+              <th className="w-[16%] px-4 py-3">Category</th>
+              <th className="w-[10%] px-4 py-3">Priority</th>
+              <th className="w-[13%] px-4 py-3">Status</th><th className="w-[12%] px-4 py-3">Email</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800">
@@ -181,6 +192,9 @@ export function ClubsLeadsTable({ leads }: { leads: ClubLead[] }) {
                 </td>
                 <td className="px-4 py-3">
                   <span className="line-clamp-2 text-xs font-medium text-slate-400">{lead.status}</span>
+                </td>
+                <td className="px-3 py-3">
+                  {gmailDraftUrl(lead) ? <a href={gmailDraftUrl(lead)!} target="_blank" rel="noopener noreferrer" onClick={(event) => event.stopPropagation()} className="inline-flex items-center gap-1 rounded-lg bg-emerald-500 px-2 py-2 text-xs font-semibold text-slate-950 hover:bg-emerald-400" aria-label={`Draft Gmail to ${lead.name}`}><Mail className="size-3.5" /> Send</a> : <span title="No published email address available" className="text-xs text-slate-500">No email</span>}
                 </td>
               </tr>
             ))}
@@ -337,7 +351,7 @@ export function ClubsLeadsTable({ leads }: { leads: ClubLead[] }) {
                 <p className="mt-1 text-sm leading-5 text-slate-300">{selectedLead.nextAction}</p>
               </div>
             </div>
-            {selectedLead.email?.length ? <a href={`mailto:${selectedLead.email[0]}?subject=${encodeURIComponent("Collaboration Opportunity | AIESEC in Colombo South")}&body=${encodeURIComponent(`Dear ${selectedLead.name} Team,\n\nGreetings from AIESEC in Colombo South at the University of Moratuwa!\n\nWe are reaching out to explore potential collaboration with your club on upcoming projects and initiatives. We would be glad to contribute through youth volunteer engagement, event promotion, university outreach, knowledge sharing and joint leadership or community-impact activities, depending on your needs.\n\nWe would love to learn more about your upcoming projects and discuss how we could support each other. Would your team be available for a short 15–20 minute online meeting at a convenient time?\n\nWe look forward to hearing from you.\n\nBest regards,\nPR Team\nAIESEC in Colombo South\nUniversity of Moratuwa`)}`} className="mb-4 inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400"><Mail className="size-4"/> Draft collaboration email</a> : <p className="mb-4 text-xs text-amber-400">No verified club email available. Use the public contact page.</p>}
+            {gmailDraftUrl(selectedLead) ? <a href={gmailDraftUrl(selectedLead)!} target="_blank" rel="noopener noreferrer" className="mb-4 inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400"><Mail className="size-4" /> Draft in Gmail</a> : <p className="mb-4 text-xs text-amber-400">No published club email available. Use the public contact page.</p>}
             <a
               href={selectedLead.page}
               target="_blank"
