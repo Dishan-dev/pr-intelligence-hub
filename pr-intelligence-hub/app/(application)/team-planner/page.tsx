@@ -7,7 +7,6 @@ import { TEAM_LABELS, TEAMS, addDays, shortDate, type PrMember, type PrPlan, typ
 import { plannerSession } from "@/lib/pr-planner/session";
 
 export const metadata = { title: "Team Planner" };
-export const dynamic = "force-dynamic";
 type SearchParams = Promise<{ plan?: string; notice?: string }>;
 const notices: Record<string, string> = {
   member_added: "Team member added.", member_updated: "Member availability updated.",
